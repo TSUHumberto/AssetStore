@@ -11,26 +11,11 @@
  * https://docs.near.org/docs/develop/contracts/as/intro
  *
  */
-import { PersistentUnorderedMap,PersistentMap  } from "near-sdk-as";
+
+import { PersistentUnorderedMap,PersistentMap,PersistentVector  } from "near-sdk-as";
 import { Context, logging, storage } from 'near-sdk-as'
 
 const DEFAULT_MESSAGE = 'Hello'
-
-class Token{
-  id: string;
-  owner_id: string;
-  metadata:TokenMetadata;
-}
-
-class NFTContractMetadata {
-  spec: string; // required, essentially a version like "nft-1.0.0"
-  name: string; // required, ex. "Mochi Rising — Digital Edition" or "Metaverse 3"
-  symbol: string; // required, ex. "MOCHI"
-  icon: string|null; // Data URL
-  base_uri: string|null; // Centralized gateway known to have reliable access to decentralized storage assets referenced by `reference` or `media` URLs
-  reference: string|null; // URL to a JSON file with more info
-  reference_hash: string|null; // Base64-encoded sha256 hash of JSON from reference field. Required if `reference` is included.
-}
 
 export function getGreeting(accountId: string): string | null {
 
@@ -51,7 +36,8 @@ export function setGreeting(message: string): void {
   storage.set(account_id, message)
 }
 
-type TokenMetadata ={
+
+class TokenMetadata {
   title: string|null; // ex. "Arch Nemesis: Mail Carrier" or "Parcel #5055"
   description: string|null; // free-form description
   media: string|null; // URL to associated media, preferably to decentralized, content-addressed storage
@@ -59,29 +45,25 @@ type TokenMetadata ={
   copies: number; // number of copies of this set of metadata in existence when token was minted.
 }
 
-let map =  new PersistentMap<string, TokenMetadata>("Tokens"); // choose a unique prefix per collection
+type AccountId = string
+type TokenId = string
+let map = new PersistentMap<TokenId, AccountId>('Tokens')
+
 
 export function nft_transfer(
   receiver_id: string,
   token_id: string,
-  
 ):void {
-  const invoca = Context.sender;
-  let token:TokenMetadata=map.getSome(invoca);
-  map.set(receiver_id,token);
-  map.delete(invoca);
+  var solicita:string =Context.sender;
+  if(map.getSome(token_id)==solicita){
+    map.set(token_id,receiver_id);
+  }
 }
 
-export function crear_nft(id_cuenta:string,metadatos:TokenMetadata):void{
-  map.set(id_cuenta, metadatos);
+export function crear_nft(id_token:string,id_cuenta:string):void{
+  map.set(id_token,id_cuenta);
 }
 
-export function obtener_nft(id_cuenta:string):TokenMetadata{
-  return map.getSome(id_cuenta);
-}
-
-export function obtener():TokenMetadata{
-  const invoca = Context.sender;
-
-  return map.getSome(invoca);
+export function obtener_nft(id_token:string):string{
+  return "El token pertenece a: "+map.getSome(id_token);
 }
